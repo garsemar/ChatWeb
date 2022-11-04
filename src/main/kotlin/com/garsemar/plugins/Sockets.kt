@@ -1,12 +1,13 @@
 package com.garsemar.plugins
 
+import com.garsemar.Connection
+import io.ktor.websocket.*
+import io.ktor.server.application.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
-import io.ktor.websocket.*
-import java.time.Duration
-import io.ktor.server.application.*
-import io.ktor.server.response.*
-import io.ktor.server.request.*
+import java.time.*
+import java.util.*
+import kotlin.collections.LinkedHashSet
 
 fun Application.configureSockets() {
     install(WebSockets) {
@@ -16,5 +17,35 @@ fun Application.configureSockets() {
         masking = false
     }
     routing {
+        val connections = Collections.synchronizedSet<Connection>(LinkedHashSet())
+        webSocket("/chat") {
+            lateinit var thisConnection: Connection
+            println("Adding user!")
+            this.send("Write your name:")
+            for(fra in incoming){
+                fra as Frame.Text
+                val name = fra.readText()
+                thisConnection = Connection(this, name)
+                connections += thisConnection
+
+                break
+            }
+            try {
+                send("You are connected! There are ${connections.count()} users here.")
+                for (frame in incoming) {
+                    frame as? Frame.Text ?: continue
+                    val receivedText = frame.readText()
+                    val textWithUsername = "[${thisConnection.name}]: $receivedText"
+                    connections.forEach {
+                        it.session.send(textWithUsername)
+                    }
+                }
+            } catch (e: Exception) {
+                println(e.localizedMessage)
+            } finally {
+                println("Removing ${thisConnection.name}!")
+                connections -= thisConnection
+            }
+        }
     }
 }

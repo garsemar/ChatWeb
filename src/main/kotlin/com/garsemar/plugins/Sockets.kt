@@ -8,7 +8,7 @@ import io.ktor.server.websocket.*
 import java.time.*
 import java.util.*
 import kotlin.collections.LinkedHashSet
-
+// https://ktor.io/docs/creating-web-socket-chat.html#feature-requests
 fun Application.configureSockets() {
     install(WebSockets) {
         pingPeriod = Duration.ofSeconds(15)
